@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hand.hap.hapExam.mapper.OmOrderHeadersMapper">
+    <resultMap id="BaseResultMap" type="com.hand.hap.hapExam.dto.OmOrderHeaders">
+        <result column="HEADER_ID" property="headerId" jdbcType="DECIMAL" />
+        <result column="ORDER_NUMBER" property="orderNumber" jdbcType="VARCHAR" />
+        <result column="COMPANY_ID" property="companyId" jdbcType="DECIMAL" />
+        <result column="ORDER_DATE" property="orderDate" jdbcType="DATE" />
+        <result column="ORDER_STATUS" property="orderStatus" jdbcType="VARCHAR" />
+        <result column="CUSTOMER_ID" property="customerId" jdbcType="DECIMAL" />
+    </resultMap>
+
+    <select id="selectWithForgeinKey" resultMap="BaseResultMap">
+        select
+        hooh.header_id as headerId,
+        hooh.order_number as orderNumber,
+        hooh.order_date as orderDate,
+        hooh.order_status as orderStatus,
+        hoc.company_id as companyId,
+        hoc.company_name as companyName,
+        hac.customer_id as customerId,
+        hac.customer_name as customerName,
+        (select sum(ORDERD_QUANTITY * UNIT_SELLING_PRICE)
+         from hap_om_order_lines hool
+         where header_id = hooh.HEADER_ID ) as orderAmount
+        from
+        hap_om_order_headers hooh
+        INNER JOIN hap_ar_customers hac ON hooh.customer_id =hac.customer_id
+        INNER JOIN hap_org_companys hoc ON hooh.company_id = hoc.company_id
+        <where>
+            <if test="headerId != null">
+                AND hooh.header_id=#{headerId}
+            </if>
+            <if test="customerId != null">
+                AND hooh.customer_id=#{customerId}
+            </if>
+            <if test="companyId != null">
+                AND hooh.company_id=#{companyId}
+            </if>
+            <if test="orderNumber != null">
+                AND hooh.order_number like concat('%', concat(#{orderNumber}, '%'))
+            </if>
+            <if test="orderStatus != null">
+                AND hooh.order_status=#{orderStatus}
+            </if>
+            <if test="inventoryItemId != null">
+                AND hooh.header_id IN (
+                SELECT l.header_id
+                FROM hap_om_order_headers h
+                INNER JOIN hap_om_order_lines l
+                ON l.HEADER_ID = h.HEADER_ID
+                AND l.INVENTORY_ITEM_ID = #{inventoryItemId})
+            </if>
+        </where>
+    </select>
+
+</mapper>
